@@ -1,30 +1,24 @@
 {
     "name": "Easy HAR extractor",
-    "version": "0.1",
+    "version": "0.2",
     "manifest_version": 2,
-    "minimum_chrome_version": "28",
+    "minimum_chrome_version": "10.0",
     "description": "Easily extract the HAR network logs for diagnostic purposes",
     "icons": {
         "16": "/images/record-grey.png",
         "48": "/images/record-grey.png",
         "128": "/images/record-grey.png"
     },
-    "browser_action": {
-        "default_icon": {
-            "19": "/images/record-grey.png",
-            "38": "/images/record-grey.png"
-        }
-    },
+    "devtools_page": "devtools.html",
     "permissions": [
-        "tabs",
-        "webRequest",
-        "notifications",
-        "downloads",
+        "http://*/*",
         "https://*/*",
-        "http://*/*"
+        "tabs",
+        "notifications",
+        "downloads"
     ],
     "background": {
-        "scripts": ["har.js", "storage.js", "callbacks.js", "notifications.js", "background.js"]
+        "scripts": ["background.js"]
     }
 }
 

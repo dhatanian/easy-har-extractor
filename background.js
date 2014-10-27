@@ -1,80 +1,17 @@
-'use strict';
+/**
+ * Created by David on 27/10/2014.
+ */
 
-var harPrinter = new HARPrinter();
-
-function setPopupIcon(iconName, tabId) {
-    chrome.browserAction.setIcon({"path": "images/" + iconName, "tabId": tabId});
-}
-function showListeningPopupIcon(tabId) {
-    setPopupIcon("record-red.png", tabId);
-}
-
-function showNotListeningPopupIcon(tabId) {
-    setPopupIcon("record-grey.png", tabId);
-}
-
-function returnResultToUser(harResult, tabId) {
-    var blob = new Blob([harResult], {type: 'application/json'});
-    var downloadUrl = URL.createObjectURL(blob);
-    chrome.downloads.download({url: downloadUrl, filename: "network-" + tabId + ".har"}, function (downloadId) {
-    });
-}
-
-function generateHAR(tabStatus) {
-    return JSON.stringify(harPrinter.print(tabStatus.data));
-}
-
-function toggleListening(tabId, tabStatus) {
-    if (tabStatus == undefined) {
-        tabStatus = {data: {}};
-        registerListeningCallbacksForTab(tabId, function (listeners) {
-            tabStatus.listeners = listeners;
-            setTabStatus(tabId, tabStatus);
-            showListeningPopupIcon(tabId);
-            notifyListening(tabId, function (notificationId) {
-                tabStatus = getTabStatus(tabId);
-                tabStatus.notificationId = notificationId;
-                setTabStatus(tabId, tabStatus);
-            });
+var devToolsListener = function (message, sender, sendResponse) {
+    if (message.command == "notify") {
+        chrome.notifications.create("", message.notification, function () {
         });
-    } else {
-        unregisterListeningCallbacksForTab(tabId, tabStatus.listeners, function () {
-            removeTabStatus(tabId);
-            showNotListeningPopupIcon(tabId);
-            var harResult = generateHAR(tabStatus);
-            returnResultToUser(harResult, tabId);
-            notifyDone(tabStatus.notificationId);
+    } else if (message.command == "download") {
+        var blob = new Blob([JSON.stringify(message.data)], {type: 'application/json'});
+        var downloadUrl = URL.createObjectURL(blob);
+        chrome.downloads.download({url: downloadUrl, filename: "network-logs.har"}, function (downloadId) {
         });
     }
-}
+};
 
-function onBadgeClicked(tabId) {
-    var tabStatus = getTabStatus(tabId);
-    toggleListening(tabId, tabStatus);
-}
-
-chrome.browserAction.onClicked.addListener(
-    function (tab) {
-        onBadgeClicked(tab.id);
-    }
-);
-
-//When the user clicks on a link, the popup goes back to the default value so we reset it
-chrome.tabs.onUpdated.addListener(
-    function (tabId) {
-        var tabStatus = getTabStatus(tabId);
-        if (tabStatus != undefined) {
-            showListeningPopupIcon(tabId);
-        }
-    }
-)
-
-//When the tab is closed we end up the recording and we return the HAR
-chrome.tabs.onRemoved.addListener(
-    function (tabId) {
-        var tabStatus = getTabStatus(tabId);
-        if (tabStatus != undefined) {
-            toggleListening(tabId, tabStatus)
-        }
-    }
-)
+chrome.runtime.onMessage.addListener(devToolsListener);
